@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VPD Calculator Pro - Heatmap</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1em;
+      }
+
+      .main-content {
+        padding: 30px;
+      }
+
+      .input-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .input-group {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 15px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+      }
+
+      .input-group:hover {
+        border-color: #4caf50;
+        transform: translateY(-2px);
+      }
+
+      .input-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+        font-size: 1.05em;
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1.1em;
+        transition: border-color 0.3s ease;
+      }
+
+      .input-group input:focus {
+        outline: none;
+        border-color: #4caf50;
+      }
+
+      .unit {
+        color: #666;
+        font-size: 0.85em;
+        margin-top: 4px;
+      }
+
+      .calculate-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        padding: 16px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.2em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 30px;
+      }
+
+      .calculate-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(76, 175, 80, 0.3);
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .result-section {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+      }
+
+      .vpd-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+      }
+
+      .vpd-unit {
+        font-size: 1.1em;
+        color: #666;
+        margin-bottom: 15px;
+      }
+
+      .recommendation {
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 15px;
+        font-weight: 500;
+        font-size: 0.95em;
+      }
+
+      .rec-excellent {
+        background: #d4edda;
+        color: #155724;
+        border: 2px solid #c3e6cb;
+      }
+      .rec-good {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 2px solid #b8daff;
+      }
+      .rec-acceptable {
+        background: #fff3cd;
+        color: #856404;
+        border: 2px solid #ffeaa7;
+      }
+      .rec-poor {
+        background: #f8d7da;
+        color: #721c24;
+        border: 2px solid #f5c6cb;
+      }
+
+      .detailed-results {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: left;
+      }
+
+      .detailed-results h4 {
+        margin-bottom: 12px;
+        color: #333;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        font-size: 0.9em;
+        margin-bottom: 12px;
+      }
+
+      .chart-section {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 15px;
+        margin: 30px 0;
+      }
+
+      .chart-title {
+        font-size: 1.4em;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+        text-align: center;
+      }
+
+      .phase-selector {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+      }
+
+      .phase-btn {
+        padding: 8px 16px;
+        border: 2px solid #ddd;
+        background: white;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.85em;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        user-select: none;
+      }
+
+      .phase-btn:hover {
+        transform: translateY(-1px);
+      }
+      .phase-btn.active {
+        border-color: #4caf50;
+        background: #4caf50;
+        color: white;
+      }
+      .phase-seedling {
+        border-color: #81c784;
+      }
+      .phase-seedling.active {
+        background: #81c784;
+        border-color: #81c784;
+      }
+      .phase-vegetative {
+        border-color: #4caf50;
+      }
+      .phase-vegetative.active {
+        background: #4caf50;
+        border-color: #4caf50;
+      }
+      .phase-flowering {
+        border-color: #ff9800;
+      }
+      .phase-flowering.active {
+        background: #ff9800;
+        border-color: #ff9800;
+      }
+      .phase-ripening {
+        border-color: #f44336;
+      }
+      .phase-ripening.active {
+        background: #f44336;
+        border-color: #f44336;
+      }
+
+      /* --- ZMĚNA STYLŮ PRO GRAF --- */
+      .chart-container {
+        position: relative;
+        width: 100%;
+        height: 500px;
+        background: white;
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        margin: 20px 0;
+        padding: 0; /* Padding je nyní 0 */
+      }
+      .chart-container canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      /* --- KONEC ZMĚN --- */
+
+      .legend {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85em;
+        padding: 5px;
+      }
+
+      .legend-color {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+      }
+
+      .history-section,
+      .info-section {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 15px;
+        margin-top: 30px;
+      }
+
+      .history-title,
+      .info-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      .history-item {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      .history-details {
+        flex: 1;
+        font-size: 0.9em;
+      }
+      .history-vpd {
+        font-weight: bold;
+        color: #4caf50;
+        font-size: 1.1em;
+      }
+
+      .clear-history {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        margin-top: 15px;
+        transition: background-color 0.3s ease;
+      }
+      .clear-history:hover {
+        background: #c82333;
+      }
+
+      .info-section {
+        background: #e3f2fd;
+        padding: 20px;
+      }
+      .info-title {
+        color: #1976d2;
+        font-size: 1.2em;
+      }
+
+      .info-ranges {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+      .range-item {
+        background: white;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 0.9em;
+      }
+      .range-value {
+        font-weight: bold;
+        font-size: 1em;
+        margin-bottom: 4px;
+      }
+
+      .tip-box {
+        margin-top: 20px;
+        padding: 15px;
+        background: #fff3cd;
+        border-radius: 10px;
+        font-size: 0.9em;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          margin: 10px;
+          border-radius: 15px;
+        }
+        .main-content {
+          padding: 20px;
+        }
+        .header {
+          padding: 20px;
+        }
+        .header h1 {
+          font-size: 2em;
+        }
+        .results-grid {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        .vpd-value {
+          font-size: 2em;
+        }
+        .input-section {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+        .chart-container {
+          height: 350px;
+        }
+        .phase-selector {
+          gap: 5px;
+        }
+        .phase-btn {
+          padding: 6px 12px;
+          font-size: 0.8em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>🌱 VPD Calculator Pro</h1>
+        <p>Vapor Pressure Deficit - Profesionální nástroj s Heatmapou</p>
+      </header>
+
+      <main class="main-content">
+        <section class="input-section">
+          <div class="input-group">
+            <label for="airTemp">🌡️ Teplota vzduchu</label>
+            <input
+              type="number"
+              id="airTemp"
+              placeholder="24"
+              step="0.1"
+              value="24" />
+            <div class="unit">°C (Celsius)</div>
+          </div>
+          <div class="input-group">
+            <label for="leafTemp">🍃 Teplota listu</label>
+            <input
+              type="number"
+              id="leafTemp"
+              placeholder="26"
+              step="0.1"
+              value="26" />
+            <div class="unit">°C (obvykle +1-3°C k vzduchu)</div>
+          </div>
+          <div class="input-group">
+            <label for="humidity">💧 Relativní vlhkost vzduchu</label>
+            <input
+              type="number"
+              id="humidity"
+              placeholder="55"
+              step="1"
+              min="0"
+              max="100"
+              value="55" />
+            <div class="unit">% (procenta)</div>
+          </div>
+        </section>
+
+        <button class="calculate-btn" onclick="calculateVPD()">
+          📊 Vypočítat a zobrazit v grafu
+        </button>
+
+        <section class="results-grid">
+          <div class="result-section" id="resultSection" style="display: none">
+            <div class="vpd-value" id="vpdValue">-</div>
+            <div class="vpd-unit">kPa (kilopascal)</div>
+            <div class="recommendation" id="recommendation"></div>
+          </div>
+          <div
+            class="detailed-results"
+            id="detailedResults"
+            style="display: none">
+            <h4>📊 Detailní výpočet:</h4>
+            <div class="detail-grid" id="calculationDetails"></div>
+            <div id="formulaDetails"></div>
+          </div>
+        </section>
+
+        <section class="chart-section">
+          <h2 class="chart-title">
+            📈 VPD Heatmapa - Interaktivní vizualizace
+          </h2>
+          <div class="phase-selector">
+            <button
+              class="phase-btn phase-seedling active"
+              onclick="selectPhase('seedling')">
+              🌱 Seedling
+            </button>
+            <button
+              class="phase-btn phase-vegetative"
+              onclick="selectPhase('vegetative')">
+              🌿 Vegetative
+            </button>
+            <button
+              class="phase-btn phase-flowering"
+              onclick="selectPhase('flowering')">
+              🌸 Flowering
+            </button>
+            <button
+              class="phase-btn phase-ripening"
+              onclick="selectPhase('ripening')">
+              🍇 Ripening
+            </button>
+          </div>
+
+          <div class="chart-container">
+            <canvas id="heatmapCanvas"></canvas>
+            <canvas id="vpdChart"></canvas>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                style="background: rgba(0, 100, 255, 0.85)"></div>
+              <span>Seedling (0.4-0.8 kPa)</span>
+            </div>
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                style="background: rgba(0, 170, 170, 0.85)"></div>
+              <span>Vegetative (0.8-1.2 kPa)</span>
+            </div>
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                style="background: rgba(150, 200, 0, 0.85)"></div>
+              <span>Flowering (1.0-1.5 kPa)</span>
+            </div>
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                style="background: rgba(230, 180, 0, 0.85)"></div>
+              <span>Ripening (1.2-1.7 kPa)</span>
+            </div>
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                style="background: rgba(210, 50, 0, 0.85)"></div>
+              <span>Danger Zone (>1.7 kPa)</span>
+            </div>
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                style="background: #fff; border: 2px solid #000"></div>
+              <span>Vaše aktuální hodnoty</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="history-section">
+          <h3 class="history-title">📈 Historie měření</h3>
+          <div id="historyList">
+            <p style="color: #666; text-align: center; padding: 20px">
+              Zatím žádná měření
+            </p>
+          </div>
+          <button
+            class="clear-history"
+            onclick="clearHistory()"
+            id="clearBtn"
+            style="display: none">
+            🗑️ Vymazat historii
+          </button>
+        </section>
+
+        <section class="info-section">
+          <h3 class="info-title">ℹ️ Doporučené rozsahy VPD pro růstové fáze</h3>
+          <div class="info-ranges">
+            <div class="range-item rec-excellent">
+              <div class="range-value">0.4 - 0.8 kPa</div>
+              <div>Seedling</div>
+            </div>
+            <div class="range-item rec-good">
+              <div class="range-value">0.8 - 1.2 kPa</div>
+              <div>Vegetative</div>
+            </div>
+            <div class="range-item rec-acceptable">
+              <div class="range-value">1.0 - 1.5 kPa</div>
+              <div>Flowering</div>
+            </div>
+            <div class="range-item rec-poor">
+              <div class="range-value">1.2 - 1.7 kPa</div>
+              <div>Ripening</div>
+            </div>
+          </div>
+          <div class="tip-box">
+            <strong>💡 Tip:</strong>
+            Teplota listu je klíčová pro přesný výpočet. Většinou je o 1-3°C
+            vyšší než teplota vzduchu kvůli energii ze světel.
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      let measurements = [];
+      let vpdChart = null;
+
+      const growthPhases = {
+        seedling: {
+          name: "Seedling",
+          range: [0.4, 0.8],
+          color: "rgba(0, 100, 255, 0.85)",
+        },
+        vegetative: {
+          name: "Vegetative",
+          range: [0.8, 1.2],
+          color: "rgba(0, 170, 170, 0.85)",
+        },
+        flowering: {
+          name: "Flowering",
+          range: [1.0, 1.5],
+          color: "rgba(150, 200, 0, 0.85)",
+        },
+        ripening: {
+          name: "Late Flower / Ripening",
+          range: [1.2, 1.7],
+          color: "rgba(230, 180, 0, 0.85)",
+        },
+        danger_zone: {
+          name: "Danger Zone",
+          range: [1.7, 10],
+          color: "rgba(210, 50, 0, 0.85)",
+        },
+      };
+
+      function getColorForVPD(vpd) {
+        if (vpd < growthPhases.seedling.range[0])
+          return "rgba(108, 117, 125, 0.85)";
+        if (vpd < growthPhases.seedling.range[1])
+          return growthPhases.seedling.color;
+        if (vpd < growthPhases.vegetative.range[1])
+          return growthPhases.vegetative.color;
+        if (vpd < growthPhases.flowering.range[1])
+          return growthPhases.flowering.color;
+        if (vpd < growthPhases.ripening.range[1])
+          return growthPhases.ripening.color;
+        return growthPhases.danger_zone.color;
+      }
+
+      function calculateVPD() {
+        const airTemp = parseFloat(document.getElementById("airTemp").value);
+        const leafTemp = parseFloat(document.getElementById("leafTemp").value);
+        const humidity = parseFloat(document.getElementById("humidity").value);
+        if (isNaN(airTemp) || isNaN(leafTemp) || isNaN(humidity)) {
+          alert("Prosím zadejte platné hodnoty všech teplot a vlhkosti");
+          return;
+        }
+        if (humidity < 0 || humidity > 100) {
+          alert("Relativní vlhkost musí být mezi 0-100%");
+          return;
+        }
+        const vpLeaf =
+          (610.7 * Math.exp((17.5 * leafTemp) / (237.3 + leafTemp))) / 1000;
+        const vpAirSaturated =
+          (610.7 * Math.exp((17.5 * airTemp) / (237.3 + airTemp))) / 1000;
+        const vpAir = vpAirSaturated * (humidity / 100);
+        const vpd = vpLeaf - vpAir;
+        document.getElementById("vpdValue").textContent = vpd.toFixed(2);
+        document.getElementById("resultSection").style.display = "block";
+        document.getElementById("detailedResults").style.display = "block";
+        updateDetailedResults(vpLeaf, vpAir, vpAirSaturated, airTemp, leafTemp);
+        const recommendation = getRecommendation(vpd);
+        const recElement = document.getElementById("recommendation");
+        recElement.textContent = recommendation.text;
+        recElement.className = `recommendation ${recommendation.class}`;
+        addToHistory(airTemp, leafTemp, humidity, vpd, new Date());
+        updateChartWithCurrentPoint(airTemp, humidity, vpd);
+        document
+          .getElementById("resultSection")
+          .scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      function updateDetailedResults(
+        vpLeaf,
+        vpAir,
+        vpAirSaturated,
+        airTemp,
+        leafTemp
+      ) {
+        const details = document.getElementById("calculationDetails");
+        details.innerHTML = `<div><strong>VP<sub>list</sub>:</strong><br>${vpLeaf.toFixed(
+          3
+        )} kPa</div><div><strong>VP<sub>vzduch</sub>:</strong><br>${vpAir.toFixed(
+          3
+        )} kPa</div><div><strong>VP<sub>vzduch,sat</sub>:</strong><br>${vpAirSaturated.toFixed(
+          3
+        )} kPa</div><div><strong>Rozdíl:</strong><br>${(
+          leafTemp - airTemp
+        ).toFixed(1)}°C</div>`;
+        const formula = document.getElementById("formulaDetails");
+        formula.innerHTML = `<div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 0.85em; color: #666;"><strong>Vzorec:</strong> VPD = ${vpLeaf.toFixed(
+          3
+        )} - ${vpAir.toFixed(3)} = <strong>${(vpLeaf - vpAir).toFixed(
+          2
+        )} kPa</strong></div>`;
+      }
+
+      function getRecommendation(vpd) {
+        if (vpd >= 0.4 && vpd <= 0.8)
+          return {
+            text: "🌟 Výborné pro Seedling fázi!",
+            class: "rec-excellent",
+          };
+        if (vpd > 0.8 && vpd <= 1.2)
+          return { text: "✅ Dobré pro Vegetative fázi!", class: "rec-good" };
+        if (vpd > 1.0 && vpd <= 1.5)
+          return { text: "🌸 Vhodné pro Flowering!", class: "rec-acceptable" };
+        if (vpd > 1.2 && vpd <= 1.7)
+          return {
+            text: "🍇 Vysoké VPD pro Ripening.",
+            class: "rec-acceptable",
+          };
+        return { text: "❌ VPD mimo optimální rozsahy!", class: "rec-poor" };
+      }
+
+      function selectPhase(phase) {
+        document
+          .querySelectorAll(".phase-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        document.querySelector(`.phase-${phase}`).classList.add("active");
+      }
+
+      function addToHistory(airTemp, leafTemp, humidity, vpd, date) {
+        const measurement = { airTemp, leafTemp, humidity, vpd, date };
+        measurements.unshift(measurement);
+        if (measurements.length > 15) measurements.pop();
+        updateHistoryDisplay();
+      }
+
+      function updateHistoryDisplay() {
+        const historyList = document.getElementById("historyList");
+        const clearBtn = document.getElementById("clearBtn");
+        if (measurements.length === 0) {
+          historyList.innerHTML =
+            '<p style="color: #666; text-align: center; padding: 20px;">Zatím žádná měření</p>';
+          clearBtn.style.display = "none";
+        } else {
+          clearBtn.style.display = "block";
+          historyList.innerHTML = measurements
+            .map(
+              (m) =>
+                `<div class="history-item"><div class="history-details"><div><strong>Vzduch:</strong> ${
+                  m.airTemp
+                }°C | <strong>List:</strong> ${
+                  m.leafTemp
+                }°C | <strong>RH:</strong> ${
+                  m.humidity
+                }%</div><div style="font-size: 0.85em; color: #666; margin-top: 2px;">${formatDate(
+                  m.date
+                )}</div></div><div class="history-vpd">${m.vpd.toFixed(
+                  2
+                )} kPa</div></div>`
+            )
+            .join("");
+        }
+      }
+
+      function formatDate(date) {
+        return (
+          date.toLocaleDateString("cs-CZ") +
+          " " +
+          date.toLocaleTimeString("cs-CZ", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+      }
+
+      function clearHistory() {
+        if (confirm("Opravdu chcete vymazat celou historii měření?")) {
+          measurements = [];
+          updateHistoryDisplay();
+        }
+      }
+
+      function autoCalculate() {
+        const airTemp = document.getElementById("airTemp").value;
+        const leafTemp = document.getElementById("leafTemp").value;
+        const humidity = document.getElementById("humidity").value;
+        if (airTemp && leafTemp && humidity) calculateVPD();
+      }
+
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      function drawSmoothHeatmap() {
+        const canvas = document.getElementById("heatmapCanvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        // Nastavení rozlišení canvasu podle jeho skutečné velikosti
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        const { width, height } = canvas;
+
+        const leafTempOffset = 2;
+        const minTemp = 15,
+          maxTemp = 35;
+        const minRH = 20,
+          maxRH = 90;
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const temp = maxTemp - (y / height) * (maxTemp - minTemp);
+            const rh = minRH + (x / width) * (maxRH - minRH);
+
+            const leafTemp = temp + leafTempOffset;
+            const vpLeaf =
+              (610.7 * Math.exp((17.5 * leafTemp) / (237.3 + leafTemp))) / 1000;
+            const vpAirSat =
+              (610.7 * Math.exp((17.5 * temp) / (237.3 + temp))) / 1000;
+            const vpAir = vpAirSat * (rh / 100);
+            const vpd = vpLeaf - vpAir;
+
+            ctx.fillStyle = getColorForVPD(vpd);
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+
+      function initializeChart() {
+        drawSmoothHeatmap();
+
+        const ctx = document.getElementById("vpdChart").getContext("2d");
+        if (vpdChart) vpdChart.destroy();
+
+        vpdChart = new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Vaše hodnoty",
+                data: [],
+                backgroundColor: "#FFFFFF",
+                borderColor: "#000000",
+                borderWidth: 2,
+                pointRadius: 10,
+                pointHoverRadius: 12,
+                pointStyle: "crossRot",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const vpd = context.dataset.data[0].vpd;
+                    return `VPD: ${vpd.toFixed(2)} kPa (${
+                      context.parsed.x
+                    }% RH, ${context.parsed.y}°C)`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                type: "linear",
+                position: "bottom",
+                title: { display: true, text: "Relativní vlhkost (%)" },
+                min: 20,
+                max: 90,
+                ticks: { stepSize: 10, color: "rgba(255, 255, 255, 0.7)" },
+                grid: { color: "rgba(255, 255, 255, 0.2)" },
+                title: { display: true, text: "← Air RH", color: "white" },
+              },
+              y: {
+                title: { display: true, text: "Teplota vzduchu (°C)" },
+                min: 15,
+                max: 35,
+                ticks: { stepSize: 2, color: "rgba(255, 255, 255, 0.7)" },
+                grid: { color: "rgba(255, 255, 255, 0.2)" },
+                title: { display: true, text: "← Air Temp", color: "white" },
+              },
+            },
+          },
+        });
+      }
+
+      function updateChartWithCurrentPoint(airTemp, humidity, vpd) {
+        if (!vpdChart) return;
+        vpdChart.data.datasets[0].data = [
+          { x: humidity, y: airTemp, vpd: vpd },
+        ];
+        vpdChart.update();
+      }
+
+      window.addEventListener("load", function () {
+        initializeChart();
+        setTimeout(() => {
+          calculateVPD();
+        }, 200);
+      });
+
+      window.addEventListener(
+        "resize",
+        debounce(() => {
+          if (vpdChart) {
+            vpdChart.destroy(); // Zničení staré instance
+          }
+          initializeChart(); // Kompletní re-inicializace
+
+          // Po re-inicializaci znovu vypočítáme a zobrazíme bod
+          const airTemp = parseFloat(document.getElementById("airTemp").value);
+          const humidity = parseFloat(
+            document.getElementById("humidity").value
+          );
+          if (!isNaN(airTemp) && !isNaN(humidity)) {
+            autoCalculate();
+          }
+        }, 300)
+      );
+
+      document.addEventListener("DOMContentLoaded", function () {
+        document
+          .getElementById("airTemp")
+          .addEventListener("input", debounce(autoCalculate, 500));
+        document
+          .getElementById("leafTemp")
+          .addEventListener("input", debounce(autoCalculate, 500));
+        document
+          .getElementById("humidity")
+          .addEventListener("input", debounce(autoCalculate, 500));
+      });
+    </script>
+  </body>
+</html>
