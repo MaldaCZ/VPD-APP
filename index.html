@@ -265,7 +265,6 @@
         border-color: #f44336;
       }
 
-      /* --- ZMĚNA STYLŮ PRO GRAF --- */
       .chart-container {
         position: relative;
         width: 100%;
@@ -274,7 +273,7 @@
         border-radius: 12px;
         border: 2px solid #e9ecef;
         margin: 20px 0;
-        padding: 0; /* Padding je nyní 0 */
+        padding: 0;
       }
       .chart-container canvas {
         position: absolute;
@@ -283,7 +282,6 @@
         width: 100%;
         height: 100%;
       }
-      /* --- KONEC ZMĚN --- */
 
       .legend {
         display: grid;
@@ -544,13 +542,13 @@
               <div
                 class="legend-color"
                 style="background: rgba(150, 200, 0, 0.85)"></div>
-              <span>Flowering (1.0-1.5 kPa)</span>
+              <span>Flowering (1.2-1.5 kPa)</span>
             </div>
             <div class="legend-item">
               <div
                 class="legend-color"
                 style="background: rgba(230, 180, 0, 0.85)"></div>
-              <span>Ripening (1.2-1.7 kPa)</span>
+              <span>Ripening (1.5-1.7 kPa)</span>
             </div>
             <div class="legend-item">
               <div
@@ -595,11 +593,11 @@
               <div>Vegetative</div>
             </div>
             <div class="range-item rec-acceptable">
-              <div class="range-value">1.0 - 1.5 kPa</div>
+              <div class="range-value">1.2 - 1.5 kPa</div>
               <div>Flowering</div>
             </div>
             <div class="range-item rec-poor">
-              <div class="range-value">1.2 - 1.7 kPa</div>
+              <div class="range-value">1.5 - 1.7 kPa</div>
               <div>Ripening</div>
             </div>
           </div>
@@ -629,12 +627,12 @@
         },
         flowering: {
           name: "Flowering",
-          range: [1.0, 1.5],
+          range: [1.2, 1.5],
           color: "rgba(150, 200, 0, 0.85)",
         },
         ripening: {
           name: "Late Flower / Ripening",
-          range: [1.2, 1.7],
+          range: [1.5, 1.7],
           color: "rgba(230, 180, 0, 0.85)",
         },
         danger_zone: {
@@ -646,7 +644,7 @@
 
       function getColorForVPD(vpd) {
         if (vpd < growthPhases.seedling.range[0])
-          return "rgba(108, 117, 125, 0.85)";
+          return "rgba(0, 50, 150, 0.85)"; // Darker Blue for "too low"
         if (vpd < growthPhases.seedling.range[1])
           return growthPhases.seedling.color;
         if (vpd < growthPhases.vegetative.range[1])
@@ -724,9 +722,9 @@
           };
         if (vpd > 0.8 && vpd <= 1.2)
           return { text: "✅ Dobré pro Vegetative fázi!", class: "rec-good" };
-        if (vpd > 1.0 && vpd <= 1.5)
+        if (vpd > 1.2 && vpd <= 1.5)
           return { text: "🌸 Vhodné pro Flowering!", class: "rec-acceptable" };
-        if (vpd > 1.2 && vpd <= 1.7)
+        if (vpd > 1.5 && vpd <= 1.7)
           return {
             text: "🍇 Vysoké VPD pro Ripening.",
             class: "rec-acceptable",
@@ -817,21 +815,20 @@
         const canvas = document.getElementById("heatmapCanvas");
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-        // Nastavení rozlišení canvasu podle jeho skutečné velikosti
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         const { width, height } = canvas;
 
         const leafTempOffset = 2;
-        const minTemp = 15,
-          maxTemp = 35;
-        const minRH = 20,
-          maxRH = 90;
+        const minTemp = 0,
+          maxTemp = 45;
+        const minRH = 0,
+          maxRH = 100;
 
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
-            const temp = maxTemp - (y / height) * (maxTemp - minTemp);
-            const rh = minRH + (x / width) * (maxRH - minRH);
+            const temp = minTemp + (y / height) * (maxTemp - minTemp);
+            const rh = maxRH - (x / width) * (maxRH - minRH);
 
             const leafTemp = temp + leafTempOffset;
             const vpLeaf =
@@ -888,21 +885,52 @@
             scales: {
               x: {
                 type: "linear",
-                position: "bottom",
-                title: { display: true, text: "Relativní vlhkost (%)" },
-                min: 20,
-                max: 90,
-                ticks: { stepSize: 10, color: "rgba(255, 255, 255, 0.7)" },
-                grid: { color: "rgba(255, 255, 255, 0.2)" },
-                title: { display: true, text: "← Air RH", color: "white" },
+                position: "top",
+                reverse: true,
+                min: 0,
+                max: 100,
+                title: {
+                  display: true,
+                  text: "← Air RH",
+                  color: "white",
+                  align: "end",
+                  font: { size: 14 },
+                },
+                ticks: {
+                  stepSize: 10,
+                  color: "rgba(255, 255, 255, 0.9)",
+                  callback: function (value) {
+                    return value + " %";
+                  },
+                },
+                grid: {
+                  color: "rgba(255, 255, 255, 0.3)",
+                  borderDash: [5, 5],
+                },
               },
               y: {
-                title: { display: true, text: "Teplota vzduchu (°C)" },
-                min: 15,
-                max: 35,
-                ticks: { stepSize: 2, color: "rgba(255, 255, 255, 0.7)" },
-                grid: { color: "rgba(255, 255, 255, 0.2)" },
-                title: { display: true, text: "← Air Temp", color: "white" },
+                type: "linear",
+                position: "left",
+                reverse: true,
+                min: 0,
+                max: 45,
+                title: {
+                  display: true,
+                  text: "← Air Temp",
+                  color: "white",
+                  font: { size: 14 },
+                },
+                ticks: {
+                  stepSize: 5,
+                  color: "rgba(255, 255, 255, 0.9)",
+                  callback: function (value) {
+                    return value + " °C";
+                  },
+                },
+                grid: {
+                  color: "rgba(255, 255, 255, 0.3)",
+                  borderDash: [5, 5],
+                },
               },
             },
           },
@@ -928,11 +956,9 @@
         "resize",
         debounce(() => {
           if (vpdChart) {
-            vpdChart.destroy(); // Zničení staré instance
+            vpdChart.destroy();
           }
-          initializeChart(); // Kompletní re-inicializace
-
-          // Po re-inicializaci znovu vypočítáme a zobrazíme bod
+          initializeChart();
           const airTemp = parseFloat(document.getElementById("airTemp").value);
           const humidity = parseFloat(
             document.getElementById("humidity").value
